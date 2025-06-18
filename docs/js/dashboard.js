@@ -61,21 +61,12 @@ function updateSummaryCards() {
     const container = document.getElementById('summaryCards');
     const summary = projectData.summary;
     
+    // Removed sensitive dollar amounts - only showing percentages and market data
     const cards = [
         {
-            title: 'Total Return',
-            value: formatCurrency(summary.totalReturn),
-            class: summary.totalReturn >= 0 ? 'positive' : 'negative'
-        },
-        {
-            title: 'Return Percentage',
+            title: 'Total Return %',
             value: formatPercentage(summary.totalReturnPercentage),
             class: summary.totalReturnPercentage >= 0 ? 'positive' : 'negative'
-        },
-        {
-            title: 'Current Value',
-            value: formatCurrency(summary.totalCurrentValue),
-            class: ''
         },
         {
             title: 'IBIT Price',
@@ -83,8 +74,13 @@ function updateSummaryCards() {
             class: ''
         },
         {
-            title: 'Positions',
+            title: 'Active Positions',
             value: summary.positionCount.toString(),
+            class: ''
+        },
+        {
+            title: 'Avg Implied Vol',
+            value: `${(getAverageImpliedVol() * 100).toFixed(1)}%`,
             class: ''
         }
     ];
@@ -103,20 +99,20 @@ function updatePositionsTable() {
     
     const rows = Object.keys(positions).map(optionKey => {
         const latest = positions[optionKey][0]; // Most recent data
-        const returnClass = latest.total_return >= 0 ? 'return-positive' : 'return-negative';
+        const returnClass = latest.return_percentage >= 0 ? 'return-positive' : 'return-negative';
         
         return `
             <tr>
                 <td>$${latest.strike_price}</td>
                 <td>${latest.expiration_date}</td>
                 <td>$${latest.market_price.toFixed(2)}</td>
-                <td>$${latest.purchase_cost.toFixed(2)}</td>
-                <td class="${returnClass}">$${latest.total_return.toFixed(0)}</td>
                 <td class="${returnClass}">${latest.return_percentage.toFixed(1)}%</td>
                 <td>${latest.delta.toFixed(3)}</td>
                 <td>${latest.gamma.toFixed(3)}</td>
                 <td>${latest.theta.toFixed(3)}</td>
+                <td>${latest.vega.toFixed(3)}</td>
                 <td>${(latest.implied_volatility * 100).toFixed(1)}%</td>
+                <td>${latest.time_to_expiration.toFixed(2)} yrs</td>
             </tr>
         `;
     });
@@ -129,7 +125,7 @@ function updateMarketData() {
     const latest = projectData.rawData[0]; // Most recent entry
     
     container.innerHTML = `
-        <h3>Current Market Data</h3>
+        <h3>Market Overview</h3>
         <div class="market-grid">
             <div class="market-item">
                 <div class="label">IBIT Price</div>
@@ -140,12 +136,12 @@ function updateMarketData() {
                 <div class="value">${(getAverageImpliedVol() * 100).toFixed(1)}%</div>
             </div>
             <div class="market-item">
-                <div class="label">Time to Exp (Short)</div>
-                <div class="value">${getShortestTimeToExp().toFixed(1)} years</div>
+                <div class="label">Shortest Time to Exp</div>
+                <div class="value">${getShortestTimeToExp().toFixed(2)} years</div>
             </div>
             <div class="market-item">
-                <div class="label">Total Portfolio</div>
-                <div class="value">${formatCurrency(projectData.summary.totalCurrentValue)}</div>
+                <div class="label">Last Updated</div>
+                <div class="value">${formatDate(latest.timestamp)}</div>
             </div>
         </div>
     `;
@@ -185,8 +181,20 @@ function createPortfolioChart() {
     const ctx = document.getElementById('portfolioChart').getContext('2d');
     const data = getFilteredData();
     
-    // Calculate portfolio value over time
-    const timeData = calculatePortfolioValue(data);
+    const positions = projectData.positions;
+    const datasets = Object.keys(positions).map((optionKey, index) => {
+        const optionData = data.filter(d => `${d.strike_price}_${d.expiration_date}` === optionKey);
+        const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b'];
+        
+        return {
+            label: `$${positions[optionKey][0].strike_price} Call Return (%)`,
+            data: optionData.map(d => d.return_percentage),
+            borderColor: colors[index % colors.length],
+            backgroundColor: colors[index % colors.length] + '20',
+            fill: true,
+            tension: 0.4
+        };
+    });
     
     if (charts.portfolio) {
         charts.portfolio.destroy();
@@ -195,25 +203,18 @@ function createPortfolioChart() {
     charts.portfolio = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: timeData.map(d => formatDate(d.timestamp)),
-            datasets: [{
-                label: currentMetric === 'dollar' ? 'Portfolio Value ($)' : 'Portfolio Return (%)',
-                data: timeData.map(d => currentMetric === 'dollar' ? d.totalValue : d.totalReturnPercent),
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
+            labels: data.map(d => formatDate(d.timestamp)),
+            datasets: datasets
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
                 y: {
-                    beginAtZero: currentMetric === 'percent',
+                    beginAtZero: true,
                     ticks: {
                         callback: function(value) {
-                            return currentMetric === 'dollar' ? formatCurrency(value) : value.toFixed(1) + '%';
+                            return value.toFixed(1) + '%';
                         }
                     }
                 },
@@ -228,7 +229,7 @@ function createPortfolioChart() {
                     callbacks: {
                         label: function(context) {
                             const value = context.parsed.y;
-                            return currentMetric === 'dollar' ? formatCurrency(value) : value.toFixed(1) + '%';
+                            return context.dataset.label + ': ' + value.toFixed(1) + '%';
                         }
                     }
                 }
@@ -292,22 +293,49 @@ function createGreeksChart() {
     const ctx = document.getElementById('greeksChart').getContext('2d');
     const data = getFilteredData();
     
-    // Average Greeks across all positions
-    const greeksData = data.map(row => {
-        const timestamp = row.timestamp;
-        const positionData = data.filter(d => d.timestamp === timestamp);
-        
-        const avgDelta = positionData.reduce((sum, d) => sum + d.delta, 0) / positionData.length;
-        const avgGamma = positionData.reduce((sum, d) => sum + d.gamma, 0) / positionData.length;
-        const avgTheta = positionData.reduce((sum, d) => sum + d.theta, 0) / positionData.length;
-        
-        return { timestamp, delta: avgDelta, gamma: avgGamma, theta: avgTheta };
-    });
+    const positions = projectData.positions;
+    const datasets = [];
+    const colors = ['#667eea', '#f093fb', '#4facfe', '#43e97b', '#ff9a56', '#6c5ce7'];
+    let colorIndex = 0;
     
-    // Remove duplicates by timestamp
-    const uniqueGreeks = greeksData.filter((item, index, self) => 
-        self.findIndex(t => t.timestamp === item.timestamp) === index
-    );
+    // Create datasets for each Greek for each position
+    Object.keys(positions).forEach((optionKey, positionIndex) => {
+        const optionData = data.filter(d => `${d.strike_price}_${d.expiration_date}` === optionKey);
+        const strikePrice = positions[optionKey][0].strike_price;
+        
+        // Delta for this position
+        datasets.push({
+            label: `Delta $${strikePrice}`,
+            data: optionData.map(d => d.delta),
+            borderColor: colors[colorIndex % colors.length],
+            fill: false,
+            yAxisID: 'y',
+            tension: 0.4
+        });
+        colorIndex++;
+        
+        // Gamma for this position  
+        datasets.push({
+            label: `Gamma $${strikePrice}`,
+            data: optionData.map(d => d.gamma),
+            borderColor: colors[colorIndex % colors.length],
+            fill: false,
+            yAxisID: 'y1',
+            tension: 0.4
+        });
+        colorIndex++;
+        
+        // Theta for this position
+        datasets.push({
+            label: `Theta $${strikePrice}`,
+            data: optionData.map(d => d.theta),
+            borderColor: colors[colorIndex % colors.length],
+            fill: false,
+            yAxisID: 'y1',
+            tension: 0.4
+        });
+        colorIndex++;
+    });
     
     if (charts.greeks) {
         charts.greeks.destroy();
@@ -316,30 +344,8 @@ function createGreeksChart() {
     charts.greeks = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: uniqueGreeks.map(d => formatDate(d.timestamp)),
-            datasets: [
-                {
-                    label: 'Delta',
-                    data: uniqueGreeks.map(d => d.delta),
-                    borderColor: '#667eea',
-                    fill: false,
-                    yAxisID: 'y'
-                },
-                {
-                    label: 'Gamma',
-                    data: uniqueGreeks.map(d => d.gamma),
-                    borderColor: '#f093fb',
-                    fill: false,
-                    yAxisID: 'y1'
-                },
-                {
-                    label: 'Theta',
-                    data: uniqueGreeks.map(d => d.theta),
-                    borderColor: '#4facfe',
-                    fill: false,
-                    yAxisID: 'y1'
-                }
-            ]
+            labels: data.map(d => formatDate(d.timestamp)),
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -426,25 +432,7 @@ function createVolatilityChart() {
     });
 }
 
-function calculatePortfolioValue(data) {
-    const timestamps = [...new Set(data.map(d => d.timestamp))].sort();
-    
-    return timestamps.map(timestamp => {
-        const entriesAtTime = data.filter(d => d.timestamp === timestamp);
-        const totalValue = entriesAtTime.reduce((sum, entry) => sum + (entry.market_price * 100), 0);
-        const totalCost = entriesAtTime.reduce((sum, entry) => sum + (entry.purchase_cost * 100), 0);
-        const totalReturn = entriesAtTime.reduce((sum, entry) => sum + entry.total_return, 0);
-        const totalReturnPercent = totalCost > 0 ? (totalReturn / totalCost) * 100 : 0;
-        
-        return {
-            timestamp,
-            totalValue,
-            totalCost,
-            totalReturn,
-            totalReturnPercent
-        };
-    });
-}
+
 
 function updateCharts() {
     if (projectData) {

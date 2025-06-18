@@ -73,15 +73,15 @@ function createProjectCard(projectData) {
         <div class="project-metrics">
             <div class="metric">
                 <div class="metric-value ${returnClass}">
-                    ${returnSign}${formatCurrency(summary.totalReturn)}
-                </div>
-                <div class="metric-label">Total Return</div>
-            </div>
-            <div class="metric">
-                <div class="metric-value ${returnClass}">
                     ${returnSign}${formatPercentage(summary.totalReturnPercentage)}
                 </div>
                 <div class="metric-label">Return %</div>
+            </div>
+            <div class="metric">
+                <div class="metric-value">
+                    ${summary.positionCount}
+                </div>
+                <div class="metric-label">Positions</div>
             </div>
         </div>
         
@@ -115,11 +115,11 @@ function createEmptyProjectCard(project) {
         <div class="project-metrics">
             <div class="metric">
                 <div class="metric-value">--</div>
-                <div class="metric-label">Total Return</div>
+                <div class="metric-label">Return %</div>
             </div>
             <div class="metric">
                 <div class="metric-value">--</div>
-                <div class="metric-label">Return %</div>
+                <div class="metric-label">Positions</div>
             </div>
         </div>
         

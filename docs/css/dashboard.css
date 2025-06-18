@@ -29,6 +29,45 @@
     background: rgba(255, 255, 255, 0.2);
 }
 
+/* Educational Panel */
+.education-panel {
+    margin-bottom: 2rem;
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.education-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.education-card {
+    background: rgba(74, 144, 226, 0.05);
+    border: 1px solid rgba(74, 144, 226, 0.2);
+    border-radius: 6px;
+    padding: 1rem;
+}
+
+.education-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: #667eea;
+    font-size: 0.9rem;
+}
+
+.education-card p {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #7f8c8d;
+}
+
+.education-card strong {
+    color: #2c3e50;
+}
+
 /* Summary Cards */
 .summary-cards {
     display: grid;

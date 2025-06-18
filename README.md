@@ -8,7 +8,7 @@ This repository houses a collection of analytical projects with automated daily 
 
 ## 🚀 Live Website
 
-**Portfolio Dashboard**: [Your GitHub Pages URL will go here]
+**Portfolio Dashboard**: https://analytics-01.github.io
 
 The website features:
 - **Project Overview Cards**: Real-time metrics and status indicators
@@ -46,7 +46,7 @@ analytics-01.github.io/
 ## 📊 Current Projects
 
 ### 1. IBIT Call Monitor
-**Status**: 🟢 Active | **Last Updated**: Daily at 10 AM EST
+**Status**: 🟢 Live & Active | **Last Updated**: Daily at 10 AM EST
 
 **Description**: Comprehensive monitoring of IBIT call options with real-time pricing and Greeks analysis.
 
@@ -56,6 +56,7 @@ analytics-01.github.io/
 - Black-Scholes Greeks calculation
 - Portfolio performance tracking
 - Interactive charts and analytics
+- Live web dashboard with automated data updates
 
 **Tech Stack**: Python, yfinance, pandas, JavaScript, Chart.js
 
@@ -197,4 +198,4 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ---
 
-**Last Updated**: June 2025 | **Version**: 1.0.0
+**Last Updated**: June 18, 2025 | **Version**: 1.1.0 | **Status**: Live on GitHub Pages
