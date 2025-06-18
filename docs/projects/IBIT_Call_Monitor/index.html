@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBIT Call Monitor - Dashboard</title>
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <h1>📊 IBIT Call Monitor</h1>
+                    <p>Real-time monitoring of IBIT call options with market pricing and Greeks analysis</p>
+                </div>
+                <div class="header-actions">
+                    <button onclick="refreshData()" class="refresh-btn">🔄 Refresh</button>
+                    <a href="../../index.html" class="back-btn">← Back to Portfolio</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Summary Cards -->
+        <div class="summary-cards" id="summaryCards">
+            <!-- Will be populated by JavaScript -->
+        </div>
+
+        <!-- Time Range Selector -->
+        <div class="controls">
+            <div class="time-range-selector">
+                <button class="time-btn active" data-range="7">7 Days</button>
+                <button class="time-btn" data-range="30">30 Days</button>
+                <button class="time-btn" data-range="90">90 Days</button>
+                <button class="time-btn" data-range="all">All Time</button>
+            </div>
+            <div class="metric-toggle">
+                <button class="metric-btn active" data-metric="dollar">$ Returns</button>
+                <button class="metric-btn" data-metric="percent">% Returns</button>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-grid">
+            <div class="chart-container">
+                <h3>Portfolio Value Over Time</h3>
+                <div class="chart-wrapper">
+                    <canvas id="portfolioChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Option Prices</h3>
+                <div class="chart-wrapper">
+                    <canvas id="pricesChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Greeks Evolution</h3>
+                <div class="chart-wrapper">
+                    <canvas id="greeksChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-container">
+                <h3>Implied Volatility</h3>
+                <div class="chart-wrapper">
+                    <canvas id="volatilityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Positions Table -->
+        <div class="table-container">
+            <h3>Current Positions</h3>
+            <div class="table-wrapper">
+                <table id="positionsTable">
+                    <thead>
+                        <tr>
+                            <th>Strike</th>
+                            <th>Expiration</th>
+                            <th>Market Price</th>
+                            <th>Purchase Cost</th>
+                            <th>Return ($)</th>
+                            <th>Return (%)</th>
+                            <th>Delta</th>
+                            <th>Gamma</th>
+                            <th>Theta</th>
+                            <th>Implied Vol</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Market Data Panel -->
+        <div class="market-data" id="marketData">
+            <!-- Will be populated by JavaScript -->
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 IBIT Call Monitor | Last updated: <span id="lastUpdate">Loading...</span></p>
+        </div>
+    </footer>
+
+    <script src="../../js/utils.js?v=2"></script>
+    <script src="../../js/data-loader.js?v=2"></script>
+    <script src="../../js/dashboard.js?v=2"></script>
+</body>
+</html> 

@@ -1,0 +1,50 @@
+name: Daily IBIT Call Monitor
+
+on:
+  schedule:
+    # Runs at 10:00 AM EST
+    # EST is UTC-5, EDT is UTC-4
+    # Running at 15:00 UTC (10 AM EST during daylight saving time)
+    # Running at 15:00 UTC (11 AM EST during standard time - close enough)
+    - cron: '0 15 * * 1-5'  # Monday through Friday at 15:00 UTC
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+jobs:
+  run-ibit-monitor:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          
+      - name: Install dependencies
+        run: |
+          cd projects/IBIT_Call_Monitor/scripts
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Run IBIT Call Monitor
+        run: |
+          cd projects/IBIT_Call_Monitor/scripts
+          python main.py
+          
+      - name: Commit and push results
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add projects/IBIT_Call_Monitor/data/ibit_calls.csv
+          
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "📊 Daily IBIT Call Monitor update - $(date +'%Y-%m-%d %H:%M UTC')"
+            git push
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
