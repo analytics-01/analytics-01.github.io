@@ -7,6 +7,9 @@ on:
     - cron: '0 21 * * 1-5'
   workflow_dispatch:  # Allows manual triggering from GitHub UI
 
+permissions:
+  contents: write  # Allow pushing changes to repository
+
 jobs:
   run-ibit-monitor:
     runs-on: ubuntu-latest
