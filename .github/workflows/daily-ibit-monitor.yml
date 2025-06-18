@@ -1,12 +1,10 @@
-name: Daily IBIT Call Monitor
+name: Daily IBIT Monitor - EOD
 
 on:
   schedule:
-    # Runs at 10:00 AM EST
-    # EST is UTC-5, EDT is UTC-4
-    # Running at 15:00 UTC (10 AM EST during daylight saving time)
-    # Running at 15:00 UTC (11 AM EST during standard time - close enough)
-    - cron: '0 15 * * 1-5'  # Monday through Friday at 15:00 UTC
+    # Run Monday-Friday at 9:00 PM UTC (4:00 PM EST - After Market Close)
+    # This accounts for both EST (UTC-5) and EDT (UTC-4) automatically
+    - cron: '0 21 * * 1-5'
   workflow_dispatch:  # Allows manual triggering from GitHub UI
 
 jobs:
@@ -20,7 +18,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.11'
           
       - name: Install dependencies
         run: |
@@ -28,22 +26,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: Run IBIT Call Monitor
+      - name: Run IBIT Monitor with Market Validation
         run: |
           cd projects/IBIT_Call_Monitor/scripts
           python main.py
           
-      - name: Commit and push results
+      - name: Commit and push if data collected
         run: |
           git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action Bot"
-          git add projects/IBIT_Call_Monitor/data/ibit_calls.csv
+          git config --local user.name "GitHub Action [EOD Monitor]"
           
-          # Check if there are changes to commit
+          # Add both data files
+          git add projects/IBIT_Call_Monitor/data/ibit_calls.csv docs/projects/IBIT_Call_Monitor/data/ibit_calls.csv || true
+          
+          # Only commit if there are changes (market was open)
           if git diff --staged --quiet; then
-            echo "No changes to commit"
+            echo "✅ No changes to commit - Market was likely closed today"
           else
-            git commit -m "📊 Daily IBIT Call Monitor update - $(date +'%Y-%m-%d %H:%M UTC')"
+            git commit -m "📈 EOD IBIT data update - $(TZ='America/New_York' date '+%Y-%m-%d %I:%M %p EST')"
+            echo "🚀 Pushing updated data to repository"
             git push
           fi
         env:
