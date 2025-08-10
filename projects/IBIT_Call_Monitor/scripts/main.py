@@ -25,12 +25,8 @@ OPTIONS = [
         'strike': 85,
         'expiration': '2027-12-17',
         'purchase_cost': 14.95
-    },
-    {
-        'strike': 60,
-        'expiration': '2025-08-08',  # Updated to match available expiration
-        'purchase_cost': 3.35
     }
+    # Removed the short-term $60 call option as it has expired
 ]
 
 # Constants

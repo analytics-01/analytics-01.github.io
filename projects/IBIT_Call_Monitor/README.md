@@ -70,9 +70,8 @@ The project runs automatically Monday-Friday at 10:00 AM EST via GitHub Actions.
 | Position | Strike | Expiration | Purchase Price | Contracts |
 |----------|--------|------------|----------------|-----------|
 | IBIT Call | $85 | Dec 17, 2027 | $14.95 | 1 |
-| IBIT Call | $60 | Jul 31, 2025 | $3.35 | 1 |
 
-**Total Investment**: $1,830 ($1,495 + $335)
+**Total Investment**: $1,495
 
 ## 🛠️ Technical Details
 

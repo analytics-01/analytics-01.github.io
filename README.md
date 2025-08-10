@@ -51,7 +51,7 @@ analytics-01.github.io/
 **Description**: Comprehensive monitoring of IBIT call options with real-time pricing and Greeks analysis.
 
 **Features**:
-- Tracks two call options ($85 Dec 2027, $60 Jul 2025)
+- Tracks one long-term call option ($85 Dec 2027)
 - Real-time market data from Yahoo Finance
 - Black-Scholes Greeks calculation
 - Portfolio performance tracking
