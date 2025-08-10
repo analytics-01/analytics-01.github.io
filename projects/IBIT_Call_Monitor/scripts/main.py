@@ -28,7 +28,7 @@ OPTIONS = [
     },
     {
         'strike': 60,
-        'expiration': '2025-07-31',
+        'expiration': '2025-08-08',  # Updated to match available expiration
         'purchase_cost': 3.35
     }
 ]
@@ -189,7 +189,8 @@ def save_daily_data(option_data, csv_file):
         existing_df = pd.read_csv(csv_file)
         # Add date column for existing data if missing
         if 'date_est' not in existing_df.columns:
-            existing_df['date_est'] = pd.to_datetime(existing_df['timestamp']).dt.date.astype(str)
+            # Handle mixed timestamp formats more robustly
+            existing_df['date_est'] = pd.to_datetime(existing_df['timestamp'], format='mixed').dt.date.astype(str)
     else:
         existing_df = pd.DataFrame()
     
