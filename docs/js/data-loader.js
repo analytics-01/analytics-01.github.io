@@ -137,11 +137,19 @@ class DataLoader {
         // Sort by timestamp (newest first)
         const sortedData = rawData.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         
+        // Filter to only include long leap calls (time to expiration > 1 year)
+        const longLeapData = sortedData.filter(row => row.time_to_expiration > 1.0);
+        
+        if (longLeapData.length === 0) {
+            console.warn('No long leap call data found (expiration > 1 year)');
+            return null;
+        }
+        
         // Get latest data point for summary
-        const latest = sortedData[0];
+        const latest = longLeapData[0];
         
         // Calculate total portfolio value and returns
-        const positions = this.groupByOption(sortedData);
+        const positions = this.groupByOption(longLeapData);
         let totalCurrentValue = 0;
         let totalPurchaseCost = 0;
         let totalReturn = 0;
@@ -168,7 +176,7 @@ class DataLoader {
                 ibitPrice: latest.ibit_price,
                 positionCount: Object.keys(positions).length
             },
-            rawData: sortedData,
+            rawData: longLeapData,
             positions: positions
         };
     }

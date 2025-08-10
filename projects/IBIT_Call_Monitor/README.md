@@ -1,12 +1,13 @@
-# IBIT Call Monitor
+# IBIT Long Leap Call Monitor
 
-A comprehensive monitoring system for IBIT (iShares Bitcoin Trust) call options with real-time pricing, Greeks analysis, and automated daily data collection.
+A comprehensive monitoring system for IBIT (iShares Bitcoin Trust) long leap call options with real-time pricing, Greeks analysis, and automated daily data collection.
 
 ## 📊 Overview
 
-This project tracks the performance of two specific IBIT call options:
+This project tracks the performance of IBIT long leap call options (1+ year to expiration):
 - **$85 Call** expiring December 17, 2027 (purchased at $14.95)
-- **$60 Call** expiring July 31, 2025 (purchased at $3.35)
+
+**Note**: The $60 call option expiring July 31, 2025 has been removed as it expired. We now focus exclusively on long leap calls with 1+ year to expiration for strategic long-term positioning.
 
 ## 🎯 Features
 
@@ -14,7 +15,7 @@ This project tracks the performance of two specific IBIT call options:
 - **Greeks Calculation**: Computes Delta, Gamma, Theta, Vega, and Rho using Black-Scholes model
 - **Portfolio Tracking**: Monitors total returns and percentage gains/losses
 - **Automated Collection**: Daily data updates via GitHub Actions
-- **Web Dashboard**: Interactive charts and analytics dashboard
+- **Web Dashboard**: Interactive charts and analytics dashboard focused on long leap calls
 
 ## 🏗️ Architecture
 
@@ -67,11 +68,12 @@ The project runs automatically Monday-Friday at 10:00 AM EST via GitHub Actions.
 
 ## 💰 Portfolio Summary
 
-| Position | Strike | Expiration | Purchase Price | Contracts |
-|----------|--------|------------|----------------|-----------|
-| IBIT Call | $85 | Dec 17, 2027 | $14.95 | 1 |
+| Position | Strike | Expiration | Purchase Price | Contracts | Type |
+|----------|--------|------------|----------------|-----------|------|
+| IBIT Call | $85 | Dec 17, 2027 | $14.95 | 1 | Long Leap |
 
 **Total Investment**: $1,495
+**Strategy**: Long leap calls for strategic Bitcoin exposure with extended time horizon
 
 ## 🛠️ Technical Details
 
@@ -94,6 +96,7 @@ Currently using 4.39% (10-year Treasury rate as of implementation)
 Access the interactive dashboard at: `[GitHub Pages URL]/projects/IBIT_Call_Monitor/`
 
 ### Dashboard Features
+- **Long Leap Focus**: Only displays calls with 1+ year to expiration
 - **Summary Cards**: Total returns, current value, IBIT price
 - **Interactive Charts**: Portfolio value, option prices, Greeks evolution
 - **Time Filters**: 7 days, 30 days, 90 days, all time
@@ -113,12 +116,23 @@ Access the interactive dashboard at: `[GitHub Pages URL]/projects/IBIT_Call_Moni
 
 ### Data Retention
 - All historical data is preserved in the CSV file
-- Each day adds one row per option (2 rows total)
+- Each day adds one row per long leap option (currently 1 row per day)
+- Historical data from expired options is preserved but filtered from dashboard
 - No data deletion or archiving
 
 ## 📝 Notes
 
+- **Long Leap Focus**: Only monitors call options with 1+ year to expiration for strategic long-term positioning
+- **Automated Filtering**: Dashboard automatically filters out expired or short-term options
 - Options data may not be available during market holidays
 - Greeks calculations use theoretical Black-Scholes model
 - Market prices may differ slightly from theoretical values due to bid-ask spreads and market sentiment
-- All returns assume 100 shares per contract 
+- All returns assume 100 shares per contract
+
+## 🔧 Recent Updates (August 2025)
+
+- ✅ **Fixed GitHub Actions errors**: Removed expired $60 call option causing collection failures
+- ✅ **Enhanced timestamp parsing**: Robust handling of mixed timestamp formats
+- ✅ **Long leap filtering**: Dashboard now only shows calls with 1+ year to expiration
+- ✅ **Updated data**: Added current market data showing 7.9% return vs stale -1.2%
+- ✅ **Cache handling**: Improved browser cache management for real-time updates 

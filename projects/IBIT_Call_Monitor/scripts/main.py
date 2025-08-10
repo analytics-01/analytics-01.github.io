@@ -19,14 +19,15 @@ import math
 # Add parent directory to path for relative imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Options to monitor
+# Options to monitor - Only Long Leap Calls (1+ year expiration)
 OPTIONS = [
     {
         'strike': 85,
         'expiration': '2027-12-17',
         'purchase_cost': 14.95
     }
-    # Removed the short-term $60 call option as it has expired
+    # Note: $60 call expiring 2025-07-31 has been removed as it expired
+    # Only monitoring long leap calls with 1+ year to expiration
 ]
 
 # Constants
@@ -186,7 +187,26 @@ def save_daily_data(option_data, csv_file):
         # Add date column for existing data if missing
         if 'date_est' not in existing_df.columns:
             # Handle mixed timestamp formats more robustly
-            existing_df['date_est'] = pd.to_datetime(existing_df['timestamp'], format='mixed').dt.date.astype(str)
+            try:
+                # First try with mixed format
+                existing_df['date_est'] = pd.to_datetime(existing_df['timestamp'], format='mixed').dt.date.astype(str)
+            except ValueError:
+                # Fallback: parse each timestamp individually
+                def safe_parse_date(timestamp_str):
+                    try:
+                        # Try ISO format first
+                        dt = pd.to_datetime(timestamp_str, format='ISO8601')
+                        return dt.date().isoformat()
+                    except:
+                        try:
+                            # Try generic parsing
+                            dt = pd.to_datetime(timestamp_str)
+                            return dt.date().isoformat()
+                        except:
+                            # Last resort: extract date from string
+                            return timestamp_str[:10] if len(timestamp_str) >= 10 else timestamp_str
+                
+                existing_df['date_est'] = existing_df['timestamp'].apply(safe_parse_date)
     else:
         existing_df = pd.DataFrame()
     
@@ -216,7 +236,8 @@ def save_daily_data(option_data, csv_file):
 
 def main():
     """Main execution with simplified trading day validation"""
-    print("=== IBIT Call Monitor - EOD Version ===")
+    print("=== IBIT Long Leap Call Monitor - EOD Version ===")
+    print("Monitoring long leap calls (1+ year to expiration)")
     
     # Check if today is a trading day
     is_trading_day, reason = is_trading_day_today()
@@ -321,7 +342,7 @@ def main():
         print(f"Error in main execution: {e}")
         raise
     
-    print("=== IBIT Call Monitor - Complete ===")
+    print("=== IBIT Long Leap Call Monitor - Complete ===")
 
 if __name__ == "__main__":
     main() 

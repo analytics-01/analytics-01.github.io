@@ -1,4 +1,4 @@
-name: Daily IBIT Monitor - EOD
+name: Daily IBIT Long Leap Call Monitor - EOD
 
 on:
   schedule:
@@ -29,7 +29,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-      - name: Run IBIT Monitor with Market Validation
+      - name: Run IBIT Long Leap Call Monitor with Market Validation
         run: |
           cd projects/IBIT_Call_Monitor/scripts
           python main.py
@@ -37,7 +37,7 @@ jobs:
       - name: Commit and push if data collected
         run: |
           git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action [EOD Monitor]"
+          git config --local user.name "GitHub Action [EOD Long Leap Monitor]"
           
           # Add both data files
           git add projects/IBIT_Call_Monitor/data/ibit_calls.csv docs/projects/IBIT_Call_Monitor/data/ibit_calls.csv || true
@@ -46,7 +46,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "✅ No changes to commit - Market was likely closed today"
           else
-            git commit -m "📈 EOD IBIT data update - $(TZ='America/New_York' date '+%Y-%m-%d %I:%M %p EST')"
+            git commit -m "📈 EOD IBIT Long Leap Call data update - $(TZ='America/New_York' date '+%Y-%m-%d %I:%M %p EST')"
             echo "🚀 Pushing updated data to repository"
             git push
           fi
