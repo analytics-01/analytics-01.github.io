@@ -187,26 +187,21 @@ def save_daily_data(option_data, csv_file):
         # Add date column for existing data if missing
         if 'date_est' not in existing_df.columns:
             # Handle mixed timestamp formats more robustly
-            try:
-                # First try with mixed format
-                existing_df['date_est'] = pd.to_datetime(existing_df['timestamp'], format='mixed').dt.date.astype(str)
-            except ValueError:
-                # Fallback: parse each timestamp individually
-                def safe_parse_date(timestamp_str):
+            def safe_parse_date(timestamp_str):
+                try:
+                    # Try ISO format first
+                    dt = pd.to_datetime(timestamp_str, format='ISO8601')
+                    return dt.date().isoformat()
+                except:
                     try:
-                        # Try ISO format first
-                        dt = pd.to_datetime(timestamp_str, format='ISO8601')
+                        # Try generic parsing
+                        dt = pd.to_datetime(timestamp_str)
                         return dt.date().isoformat()
                     except:
-                        try:
-                            # Try generic parsing
-                            dt = pd.to_datetime(timestamp_str)
-                            return dt.date().isoformat()
-                        except:
-                            # Last resort: extract date from string
-                            return timestamp_str[:10] if len(timestamp_str) >= 10 else timestamp_str
-                
-                existing_df['date_est'] = existing_df['timestamp'].apply(safe_parse_date)
+                        # Last resort: extract date from string
+                        return timestamp_str[:10] if len(timestamp_str) >= 10 else timestamp_str
+            
+            existing_df['date_est'] = existing_df['timestamp'].apply(safe_parse_date)
     else:
         existing_df = pd.DataFrame()
     
@@ -217,11 +212,13 @@ def save_daily_data(option_data, csv_file):
         # Combine dataframes
         combined_df = pd.concat([existing_df, new_df], ignore_index=True)
         
+        # Sort by timestamp (newest first for web display) - use string sorting since ISO format sorts correctly
+        combined_df = combined_df.sort_values('timestamp', ascending=False)
+        
         # Remove duplicates: keep latest entry for each date + option combination
-        combined_df = combined_df.sort_values('timestamp')
         combined_df = combined_df.drop_duplicates(
             subset=['date_est', 'strike_price', 'expiration_date'], 
-            keep='last'
+            keep='first'  # Keep first (newest due to descending sort)
         )
     else:
         combined_df = new_df
