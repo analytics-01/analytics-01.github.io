@@ -19,15 +19,50 @@ import math
 # Add parent directory to path for relative imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Options to monitor - Only Long Leap Calls (1+ year expiration)
+# Options to monitor - Long Leap Calls (1+ year expiration)
+# Multi-Asset Beta Comparison Strategy: IBIT vs ETHA across delta levels
 OPTIONS = [
+    # IBIT Options (Bitcoin ETF)
     {
+        'symbol': 'IBIT',
         'strike': 85,
         'expiration': '2027-12-17',
-        'purchase_cost': 14.95
+        'purchase_cost': 14.95,
+        'beta_target': 0.6,
+        'strategy': 'IBIT Moderate Beta',
+        'asset_class': 'Bitcoin'
+    },
+    {
+        'symbol': 'IBIT',
+        'strike': 75,
+        'expiration': '2027-12-17',
+        'purchase_cost': 22.50,  # Estimated - will be updated with actual market price
+        'beta_target': 0.8,
+        'strategy': 'IBIT High Beta',
+        'asset_class': 'Bitcoin'
+    },
+    # ETHA Options (Ethereum ETF) - Using available 2027-01-15 expiration
+    {
+        'symbol': 'ETHA',
+        'strike': 30,  # Adjusted for current ETHA price ($34.25) - target 0.6 delta
+        'expiration': '2027-01-15',
+        'purchase_cost': 8.50,  # Estimated - will be updated with actual market price
+        'beta_target': 0.6,
+        'strategy': 'ETHA Moderate Beta',
+        'asset_class': 'Ethereum'
+    },
+    {
+        'symbol': 'ETHA',
+        'strike': 25,  # Adjusted for current ETHA price ($34.25) - target 0.8 delta
+        'expiration': '2027-01-15',
+        'purchase_cost': 12.00,  # Estimated - will be updated with actual market price
+        'beta_target': 0.8,
+        'strategy': 'ETHA High Beta',
+        'asset_class': 'Ethereum'
     }
-    # Note: $60 call expiring 2025-07-31 has been removed as it expired
-    # Only monitoring long leap calls with 1+ year to expiration
+    # Multi-Asset Beta Strategy: Compare Bitcoin vs Ethereum across delta levels
+    # IBIT: 0.6 delta ($85) vs 0.8 delta ($75)
+    # ETHA: 0.6 delta ($25) vs 0.8 delta ($20)
 ]
 
 # Constants
@@ -64,14 +99,14 @@ def is_trading_day_today():
     
     return True, f"Trading Day: {today.strftime('%A, %B %d, %Y')}"
 
-def get_current_ibit_price():
-    """Get current/latest IBIT price"""
+def get_current_etf_price(symbol):
+    """Get current/latest ETF price for any symbol (IBIT, ETHA, etc.)"""
     try:
-        ibit = yf.Ticker("IBIT")
-        hist = ibit.history(period="2d", interval="1d")  # Get last 2 days to ensure we have data
+        etf = yf.Ticker(symbol)
+        hist = etf.history(period="2d", interval="1d")  # Get last 2 days to ensure we have data
         
         if len(hist) == 0:
-            raise ValueError("No IBIT price data available")
+            raise ValueError(f"No {symbol} price data available")
         
         current_price = hist['Close'].iloc[-1]
         latest_date = hist.index[-1].date()
@@ -80,30 +115,30 @@ def get_current_ibit_price():
         today = datetime.now(eastern).date()
         
         if latest_date == today:
-            print(f"IBIT EOD price for {today}: ${current_price:.2f}")
+            print(f"{symbol} EOD price for {today}: ${current_price:.2f}")
         else:
-            print(f"IBIT latest price ({latest_date}): ${current_price:.2f} (today's data not yet available)")
+            print(f"{symbol} latest price ({latest_date}): ${current_price:.2f} (today's data not yet available)")
         
         return current_price
         
     except Exception as e:
-        print(f"Error fetching IBIT price: {e}")
+        print(f"Error fetching {symbol} price: {e}")
         raise
 
-def get_option_data(strike, expiration_date):
-    """Get option market data and calculate Greeks"""
+def get_option_data(symbol, strike, expiration_date):
+    """Get option market data and calculate Greeks for any ETF symbol"""
     try:
-        ibit = yf.Ticker("IBIT")
+        etf = yf.Ticker(symbol)
         
         # Get option chain
-        options_chain = ibit.option_chain(expiration_date)
+        options_chain = etf.option_chain(expiration_date)
         calls = options_chain.calls
         
         # Find the specific strike
         option_data = calls[calls['strike'] == strike]
         
         if option_data.empty:
-            raise ValueError(f"No option data found for ${strike} call expiring {expiration_date}")
+            raise ValueError(f"No option data found for {symbol} ${strike} call expiring {expiration_date}")
         
         option_info = option_data.iloc[0]
         
@@ -115,7 +150,7 @@ def get_option_data(strike, expiration_date):
         open_interest = option_info['openInterest'] if not pd.isna(option_info['openInterest']) else 0
         implied_vol = option_info['impliedVolatility'] if not pd.isna(option_info['impliedVolatility']) else 0
         
-        print(f"${strike} call - Market Price: ${market_price:.2f}, Bid: ${bid:.2f}, Ask: ${ask:.2f}, IV: {implied_vol:.1%}")
+        print(f"{symbol} ${strike} call - Market Price: ${market_price:.2f}, Bid: ${bid:.2f}, Ask: ${ask:.2f}, IV: {implied_vol:.1%}")
         
         return {
             'market_price': market_price,
@@ -127,7 +162,7 @@ def get_option_data(strike, expiration_date):
         }
         
     except Exception as e:
-        print(f"Error fetching option data for ${strike} call: {e}")
+        print(f"Error fetching option data for {symbol} ${strike} call: {e}")
         raise
 
 def calculate_time_to_expiration(expiration_date):
@@ -233,8 +268,8 @@ def save_daily_data(option_data, csv_file):
 
 def main():
     """Main execution with simplified trading day validation"""
-    print("=== IBIT Long Leap Call Monitor - EOD Version ===")
-    print("Monitoring long leap calls (1+ year to expiration)")
+    print("=== Multi-Asset ETF Call Monitor - EOD Version ===")
+    print("Monitoring IBIT & ETHA long leap calls across beta levels")
     
     # Check if today is a trading day
     is_trading_day, reason = is_trading_day_today()
@@ -245,29 +280,36 @@ def main():
         return
     
     try:
-        # Get current IBIT price
-        ibit_price = get_current_ibit_price()
-        
         # Get current timestamp in EST
         eastern = pytz.timezone('US/Eastern')
         timestamp = datetime.now(eastern)
+        
+        # Get current prices for all ETFs
+        etf_prices = {}
+        unique_symbols = list(set([option['symbol'] for option in OPTIONS]))
+        
+        for symbol in unique_symbols:
+            etf_prices[symbol] = get_current_etf_price(symbol)
         
         # Collect data for all options
         option_data = []
         
         for option in OPTIONS:
-            print(f"\nProcessing ${option['strike']} call expiring {option['expiration']}...")
+            symbol = option['symbol']
+            current_price = etf_prices[symbol]
+            
+            print(f"\nProcessing {symbol} ${option['strike']} call ({option['strategy']})...")
             
             try:
                 # Get market data
-                market_data = get_option_data(option['strike'], option['expiration'])
+                market_data = get_option_data(symbol, option['strike'], option['expiration'])
                 
                 # Calculate time to expiration
                 time_to_exp = calculate_time_to_expiration(option['expiration'])
                 
                 # Calculate Greeks using market implied volatility
                 greeks = black_scholes_greeks(
-                    S=ibit_price,
+                    S=current_price,
                     K=option['strike'],
                     T=time_to_exp,
                     r=RISK_FREE_RATE,
@@ -280,10 +322,10 @@ def main():
                 total_return = current_value - purchase_cost
                 return_percentage = (total_return / purchase_cost) * 100 if purchase_cost > 0 else 0
                 
-                # Compile data record
+                # Compile data record (maintain backward compatibility with ibit_price)
                 record = {
                     'timestamp': timestamp.isoformat(),
-                    'ibit_price': ibit_price,
+                    'ibit_price': etf_prices.get('IBIT', current_price),  # Keep for compatibility
                     'option_type': 'call',
                     'strike_price': option['strike'],
                     'expiration_date': option['expiration'],
@@ -301,15 +343,20 @@ def main():
                     'gamma': greeks['gamma'],
                     'theta': greeks['theta'],
                     'vega': greeks['vega'],
-                    'rho': greeks['rho']
+                    'rho': greeks['rho'],
+                    'symbol': symbol,
+                    'etf_price': current_price,
+                    'asset_class': option['asset_class'],
+                    'beta_target': option['beta_target'],
+                    'strategy': option['strategy']
                 }
                 
                 option_data.append(record)
                 
-                print(f"Success: ${option['strike']} call - Return: ${total_return:.0f} ({return_percentage:.1f}%)")
+                print(f"Success: {symbol} ${option['strike']} ({option['strategy']}) - Return: ${total_return:.0f} ({return_percentage:.1f}%) | Delta: {greeks['delta']:.3f}")
                 
             except Exception as e:
-                print(f"Error processing ${option['strike']} call: {e}")
+                print(f"Error processing {symbol} ${option['strike']} call: {e}")
                 continue
         
         if option_data:
@@ -328,9 +375,17 @@ def main():
             
             # Summary
             total_return = sum(record['total_return'] for record in option_data)
-            print(f"\n=== Portfolio Summary ===")
+            print(f"\n=== Multi-Asset Portfolio Summary ===")
             print(f"Total Return: ${total_return:.0f}")
-            print(f"IBIT Price: ${ibit_price:.2f}")
+            
+            # Show prices for all ETFs
+            for symbol, price in etf_prices.items():
+                print(f"{symbol} Price: ${price:.2f}")
+            
+            # Show position count by asset
+            ibit_positions = len([r for r in option_data if r['symbol'] == 'IBIT'])
+            etha_positions = len([r for r in option_data if r['symbol'] == 'ETHA'])
+            print(f"Positions: {ibit_positions} IBIT, {etha_positions} ETHA")
             print(f"Timestamp: {timestamp.strftime('%Y-%m-%d %I:%M %p EST')}")
         else:
             print("No option data collected")
@@ -339,7 +394,7 @@ def main():
         print(f"Error in main execution: {e}")
         raise
     
-    print("=== IBIT Long Leap Call Monitor - Complete ===")
+    print("=== Multi-Asset ETF Call Monitor - Complete ===")
 
 if __name__ == "__main__":
     main() 

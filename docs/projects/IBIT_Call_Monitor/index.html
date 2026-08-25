@@ -3,18 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IBIT Call Monitor - Dashboard</title>
+    <title>ETF Delta Comparison Tracker</title>
     <link rel="stylesheet" href="../../css/main.css">
     <link rel="stylesheet" href="../../css/dashboard.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .tracker-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        .etf-section {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .etf-header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        .etf-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .etf-price {
+            font-size: 1.2rem;
+            color: #666;
+        }
+        .delta-positions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .position-card {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        .position-card.delta-06 {
+            border-left: 4px solid #4CAF50;
+        }
+        .position-card.delta-08 {
+            border-left: 4px solid #FF9800;
+        }
+        .delta-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+        .strike-price {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .return-percent {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .return-percent.positive { color: #4CAF50; }
+        .return-percent.negative { color: #f44336; }
+        .delta-value {
+            font-size: 1rem;
+            color: #666;
+        }
+        .comparison-section {
+            margin: 2rem 0;
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .chart-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+        .chart-container {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .chart-container h4 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: #333;
+        }
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #333;
+        }
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.5rem;
+        }
+    </style>
 </head>
 <body>
     <header>
         <div class="container">
             <div class="header-content">
                 <div>
-                    <h1>📊 IBIT Long Leap Call Monitor</h1>
-                    <p>Real-time monitoring of IBIT long leap call options (1+ year expiration) with market pricing and Greeks analysis</p>
+                    <h1>📊 ETF Delta Comparison Tracker</h1>
+                    <p>Comparing IBIT (Bitcoin) vs ETHA (Ethereum) across Delta 0.6 and 0.8 levels</p>
                 </div>
                 <div class="header-actions">
                     <button onclick="refreshData()" class="refresh-btn">🔄 Refresh</button>
@@ -25,112 +138,344 @@
     </header>
 
     <main class="container">
-        <!-- Educational Section -->
-        <div class="education-panel">
-            <div class="education-grid">
-                <div class="education-card">
-                    <h4>📚 Call Options Basics</h4>
-                    <p><strong>Call Option:</strong> Right to buy IBIT at a specific strike price before expiration. Profits when IBIT price > strike price. <strong>Long Call Strategy:</strong> Bullish bet with limited risk (premium paid) and unlimited upside potential.</p>
-                </div>
-                <div class="education-card">
-                    <h4>📊 The Greeks Explained</h4>
-                    <p>
-                        <strong>Delta:</strong> Price sensitivity (0-1 for calls)<br>
-                        <strong>Gamma:</strong> Delta's rate of change<br>
-                        <strong>Theta:</strong> Time decay (negative for long positions)<br>
-                        <strong>Vega:</strong> Volatility sensitivity<br>
-                        <strong>Implied Vol:</strong> Market's expectation of future volatility
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Summary Cards -->
-        <div class="summary-cards" id="summaryCards">
+        <!-- Summary Stats -->
+        <div class="summary-stats" id="summaryStats">
             <!-- Will be populated by JavaScript -->
         </div>
 
-        <!-- Time Range Selector -->
-        <div class="controls">
-            <div class="time-range-selector">
-                <button class="time-btn active" data-range="7">7 Days</button>
-                <button class="time-btn" data-range="30">30 Days</button>
-                <button class="time-btn" data-range="90">90 Days</button>
-                <button class="time-btn" data-range="all">All Time</button>
+        <!-- Main Tracker Grid -->
+        <div class="tracker-grid">
+            <!-- IBIT Section -->
+            <div class="etf-section">
+                <div class="etf-header">
+                    <div class="etf-title">🟡 IBIT (Bitcoin)</div>
+                    <div class="etf-price" id="ibitPrice">Loading...</div>
+                </div>
+                <div class="delta-positions">
+                    <div class="position-card delta-06" id="ibit-06">
+                        <div class="delta-label">Delta 0.6 (Moderate)</div>
+                        <div class="strike-price">$85 Call</div>
+                        <div class="return-percent">Loading...</div>
+                        <div class="delta-value">δ: Loading...</div>
+                    </div>
+                    <div class="position-card delta-08" id="ibit-08">
+                        <div class="delta-label">Delta 0.8 (High)</div>
+                        <div class="strike-price">$75 Call</div>
+                        <div class="return-percent">Loading...</div>
+                        <div class="delta-value">δ: Loading...</div>
             </div>
-        </div>
-
-        <!-- Charts Section -->
-        <div class="charts-grid">
-            <div class="chart-container">
-                <h3>Portfolio Return % Over Time</h3>
-                <div class="chart-wrapper">
-                    <canvas id="portfolioChart"></canvas>
                 </div>
             </div>
             
-            <div class="chart-container">
-                <h3>Option Prices</h3>
-                <div class="chart-wrapper">
-                    <canvas id="pricesChart"></canvas>
+            <!-- ETHA Section -->
+            <div class="etf-section">
+                <div class="etf-header">
+                    <div class="etf-title">🔵 ETHA (Ethereum)</div>
+                    <div class="etf-price" id="ethaPrice">Loading...</div>
                 </div>
+                <div class="delta-positions">
+                    <div class="position-card delta-06" id="etha-06">
+                        <div class="delta-label">Delta 0.6 (Moderate)</div>
+                        <div class="strike-price">$30 Call</div>
+                        <div class="return-percent">Loading...</div>
+                        <div class="delta-value">δ: Loading...</div>
+                    </div>
+                    <div class="position-card delta-08" id="etha-08">
+                        <div class="delta-label">Delta 0.8 (High)</div>
+                        <div class="strike-price">$25 Call</div>
+                        <div class="return-percent">Loading...</div>
+                        <div class="delta-value">δ: Loading...</div>
             </div>
-            
-            <div class="chart-container">
-                <h3>Greeks Evolution</h3>
-                <div class="chart-wrapper">
-                    <canvas id="greeksChart"></canvas>
-                </div>
-            </div>
-            
-            <div class="chart-container">
-                <h3>Implied Volatility</h3>
-                <div class="chart-wrapper">
-                    <canvas id="volatilityChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Current Positions Table -->
-        <div class="table-container">
-            <h3>Current Positions</h3>
-            <div class="table-wrapper">
-                <table id="positionsTable">
-                    <thead>
-                        <tr>
-                            <th>Strike</th>
-                            <th>Expiration</th>
-                            <th>Market Price</th>
-                            <th>Return (%)</th>
-                            <th>Delta</th>
-                            <th>Gamma</th>
-                            <th>Theta</th>
-                            <th>Vega</th>
-                            <th>Implied Vol</th>
-                            <th>Time to Exp</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Will be populated by JavaScript -->
-                    </tbody>
-                </table>
+        <!-- Comparison Charts -->
+        <div class="comparison-section">
+            <h2>📈 Performance Comparison</h2>
+            <div class="chart-grid">
+                <div class="chart-container">
+                    <h4>ETF Comparison (Delta 0.6 vs 0.8)</h4>
+                    <canvas id="etfComparisonChart" width="400" height="200"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4>Delta Efficiency (Return per Delta)</h4>
+                    <canvas id="deltaEfficiencyChart" width="400" height="200"></canvas>
+                </div>
             </div>
-        </div>
-
-        <!-- Market Data Panel -->
-        <div class="market-data" id="marketData">
-            <!-- Will be populated by JavaScript -->
         </div>
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy; 2025 IBIT Long Leap Call Monitor | Last updated: <span id="lastUpdate">Loading...</span></p>
+            <p>&copy; 2025 ETF Delta Tracker | Last updated: <span id="lastUpdate">Loading...</span></p>
         </div>
     </footer>
 
-    <script src="../../js/utils.js?v=5"></script>
-    <script src="../../js/data-loader.js?v=5"></script>
-    <script src="../../js/dashboard.js?v=5"></script>
+    <script>
+        let dashboardData = null;
+
+        // Load data when page loads
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+
+        async function loadDashboard() {
+            try {
+                console.log('Loading CSV data...');
+                const response = await fetch('./data/ibit_calls.csv');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const csvText = await response.text();
+                console.log('CSV loaded, length:', csvText.length);
+                
+                const data = parseCSV(csvText);
+                console.log('Parsed data:', data.length, 'rows');
+                console.log('First few rows:', data.slice(0, 3));
+                
+                // Get latest 4 records (most recent timestamp with symbol data)
+                const dataWithSymbols = data.filter(row => row.symbol && row.symbol.trim());
+                console.log('Data with symbols:', dataWithSymbols.length, 'rows');
+                
+                if (dataWithSymbols.length === 0) {
+                    throw new Error('No data with symbol information found');
+                }
+                
+                const latestTimestamp = dataWithSymbols[0]?.timestamp;
+                const latestData = dataWithSymbols.filter(row => row.timestamp === latestTimestamp);
+                
+                console.log('Latest timestamp:', latestTimestamp);
+                console.log('Latest data:', latestData.length, 'rows');
+                console.log('Latest data details:', latestData);
+                
+                dashboardData = processData(latestData);
+                updateDashboard();
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                document.getElementById('summaryStats').innerHTML = `<div class="error">Failed to load data: ${error.message}</div>`;
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n').filter(line => line.length > 0);
+            
+            if (lines.length < 2) {
+                throw new Error('CSV file appears to be empty or invalid');
+            }
+            
+            const headers = lines[0].split(',');
+            console.log('CSV headers:', headers);
+            
+            const data = lines.slice(1).map((line, index) => {
+                if (!line.trim()) return null; // Skip empty lines
+                
+                const values = line.split(',');
+                const row = {};
+                
+                headers.forEach((header, headerIndex) => {
+                    const value = values[headerIndex] || '';
+                    
+                    // Convert numeric fields
+                    if (['ibit_price', 'strike_price', 'market_price', 'return_percentage', 'delta', 'etf_price', 'beta_target'].includes(header)) {
+                        row[header] = value ? parseFloat(value) : 0;
+                    } else {
+                        row[header] = value;
+                    }
+                });
+                
+                return row;
+            }).filter(row => row && row.symbol && row.symbol.trim()); // Only keep rows with symbol data
+            
+            console.log('Parsed data rows:', data.length);
+            console.log('Sample row:', data[0]);
+            
+            return data;
+        }
+
+        function processData(latestData) {
+            const processed = {
+                ibit: {},
+                etha: {},
+                summary: {}
+            };
+
+            latestData.forEach(row => {
+                const key = row.beta_target == 0.6 ? 'delta06' : 'delta08';
+                
+                if (row.symbol === 'IBIT') {
+                    processed.ibit[key] = row;
+                    processed.ibit.price = row.etf_price;
+                } else if (row.symbol === 'ETHA') {
+                    processed.etha[key] = row;
+                    processed.etha.price = row.etf_price;
+                }
+            });
+
+            // Calculate summary stats
+            const allPositions = latestData;
+            if (allPositions.length > 0) {
+                processed.summary = {
+                    totalReturn: allPositions.reduce((sum, pos) => sum + pos.return_percentage, 0) / allPositions.length,
+                    bestPerformer: allPositions.reduce((best, pos) => pos.return_percentage > best.return_percentage ? pos : best),
+                    avgDelta: allPositions.reduce((sum, pos) => sum + pos.delta, 0) / allPositions.length,
+                    lastUpdate: allPositions[0].timestamp
+                };
+            } else {
+                processed.summary = {
+                    totalReturn: 0,
+                    bestPerformer: { symbol: 'N/A', strike_price: 0 },
+                    avgDelta: 0,
+                    lastUpdate: new Date().toISOString()
+                };
+            }
+
+            return processed;
+        }
+
+        function updateDashboard() {
+            if (!dashboardData) return;
+
+            // Update summary stats
+            updateSummaryStats();
+
+            // Update ETF prices
+            document.getElementById('ibitPrice').textContent = `$${dashboardData.ibit.price?.toFixed(2) || '0.00'}`;
+            document.getElementById('ethaPrice').textContent = `$${dashboardData.etha.price?.toFixed(2) || '0.00'}`;
+
+            // Update position cards
+            updatePositionCard('ibit-06', dashboardData.ibit.delta06);
+            updatePositionCard('ibit-08', dashboardData.ibit.delta08);
+            updatePositionCard('etha-06', dashboardData.etha.delta06);
+            updatePositionCard('etha-08', dashboardData.etha.delta08);
+
+            // Update charts
+            createCharts();
+
+            // Update timestamp
+            document.getElementById('lastUpdate').textContent = new Date(dashboardData.summary.lastUpdate).toLocaleString();
+        }
+
+        function updateSummaryStats() {
+            const stats = [
+                { label: 'Avg Return', value: `${dashboardData.summary.totalReturn.toFixed(1)}%` },
+                { label: 'Best Performer', value: `${dashboardData.summary.bestPerformer.symbol} $${dashboardData.summary.bestPerformer.strike_price}` },
+                { label: 'Avg Delta', value: `${dashboardData.summary.avgDelta.toFixed(3)}` },
+                { label: 'Active Positions', value: '4' }
+            ];
+
+            document.getElementById('summaryStats').innerHTML = stats.map(stat => `
+                <div class="stat-card">
+                    <div class="stat-value">${stat.value}</div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+        }
+
+        function updatePositionCard(cardId, data) {
+            const card = document.getElementById(cardId);
+            if (!data) {
+                card.querySelector('.return-percent').textContent = 'No Data';
+                card.querySelector('.delta-value').textContent = 'δ: --';
+                return;
+            }
+
+            const returnEl = card.querySelector('.return-percent');
+            const deltaEl = card.querySelector('.delta-value');
+
+            returnEl.textContent = `${data.return_percentage >= 0 ? '+' : ''}${data.return_percentage.toFixed(1)}%`;
+            returnEl.className = `return-percent ${data.return_percentage >= 0 ? 'positive' : 'negative'}`;
+            deltaEl.textContent = `δ: ${data.delta.toFixed(3)}`;
+        }
+
+        function createCharts() {
+            createETFComparisonChart();
+            createDeltaEfficiencyChart();
+        }
+
+        function createETFComparisonChart() {
+            const ctx = document.getElementById('etfComparisonChart').getContext('2d');
+            
+            const data = {
+                labels: ['IBIT Δ0.6', 'IBIT Δ0.8', 'ETHA Δ0.6', 'ETHA Δ0.8'],
+                datasets: [{
+                    label: 'Return %',
+                    data: [
+                        dashboardData.ibit.delta06?.return_percentage || 0,
+                        dashboardData.ibit.delta08?.return_percentage || 0,
+                        dashboardData.etha.delta06?.return_percentage || 0,
+                        dashboardData.etha.delta08?.return_percentage || 0
+                    ],
+                    backgroundColor: ['#FFC107', '#FF9800', '#2196F3', '#1976D2'],
+                    borderWidth: 1
+                }]
+            };
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: data,
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Return %' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function createDeltaEfficiencyChart() {
+            const ctx = document.getElementById('deltaEfficiencyChart').getContext('2d');
+            
+            const positions = [
+                dashboardData.ibit.delta06,
+                dashboardData.ibit.delta08,
+                dashboardData.etha.delta06,
+                dashboardData.etha.delta08
+            ].filter(pos => pos);
+
+            const data = {
+                datasets: [{
+                    label: 'Delta vs Return',
+                    data: positions.map(pos => ({
+                        x: pos.delta,
+                        y: pos.return_percentage,
+                        label: `${pos.symbol} $${pos.strike_price}`
+                    })),
+                    backgroundColor: positions.map(pos => pos.symbol === 'IBIT' ? '#FFC107' : '#2196F3'),
+                    pointRadius: 8
+                }]
+            };
+
+            new Chart(ctx, {
+                type: 'scatter',
+                data: data,
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Delta' } },
+                        y: { title: { display: true, text: 'Return %' } }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const point = context.raw;
+                                    return `${point.label}: δ${point.x.toFixed(3)}, ${point.y.toFixed(1)}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function refreshData() {
+            await loadDashboard();
+        }
+    </script>
 </body>
 </html> 

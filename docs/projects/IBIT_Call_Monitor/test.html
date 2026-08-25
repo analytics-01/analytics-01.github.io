@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSV Test</title>
+</head>
+<body>
+    <h1>CSV Loading Test</h1>
+    <div id="result">Loading...</div>
+    
+    <script>
+        async function testCSV() {
+            try {
+                console.log('Testing CSV load...');
+                const response = await fetch('./data/ibit_calls.csv');
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+                
+                const text = await response.text();
+                console.log('CSV length:', text.length);
+                console.log('First 200 chars:', text.substring(0, 200));
+                
+                const lines = text.split('\n');
+                console.log('Number of lines:', lines.length);
+                
+                document.getElementById('result').innerHTML = `
+                    <p>Status: ${response.status}</p>
+                    <p>CSV Length: ${text.length}</p>
+                    <p>Lines: ${lines.length}</p>
+                    <pre>${text.substring(0, 500)}...</pre>
+                `;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `Error: ${error.message}`;
+            }
+        }
+        
+        testCSV();
+    </script>
+</body>
+</html>

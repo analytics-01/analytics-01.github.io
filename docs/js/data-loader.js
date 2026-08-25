@@ -154,11 +154,50 @@ class DataLoader {
         let totalPurchaseCost = 0;
         let totalReturn = 0;
 
+        // Enhanced multi-asset beta comparison metrics
+        let betaPositions = {};
+        let assetSummary = {};
+        
         Object.values(positions).forEach(position => {
             const latestEntry = position[0]; // First entry is most recent
             totalCurrentValue += latestEntry.market_price * 100; // Contract value
             totalPurchaseCost += latestEntry.purchase_cost * 100;
             totalReturn += latestEntry.total_return;
+            
+            // Calculate beta efficiency (return per unit of delta)
+            const betaEfficiency = latestEntry.delta > 0 ? latestEntry.return_percentage / latestEntry.delta : 0;
+            const symbol = latestEntry.symbol || 'IBIT'; // fallback for legacy data
+            const strikeKey = `${symbol}_${latestEntry.strike_price}`;
+            
+            betaPositions[strikeKey] = {
+                symbol: symbol,
+                strike: latestEntry.strike_price,
+                delta: latestEntry.delta,
+                returnPercentage: latestEntry.return_percentage,
+                betaEfficiency: betaEfficiency,
+                betaStrategy: latestEntry.strategy || this.inferBetaStrategy(latestEntry),
+                assetClass: latestEntry.asset_class || (symbol === 'IBIT' ? 'Bitcoin' : 'Ethereum'),
+                etfPrice: latestEntry.etf_price || latestEntry.ibit_price || 0,
+                latestEntry: latestEntry
+            };
+            
+            // Aggregate by asset for summary
+            if (!assetSummary[symbol]) {
+                assetSummary[symbol] = {
+                    symbol: symbol,
+                    assetClass: latestEntry.asset_class || (symbol === 'IBIT' ? 'Bitcoin' : 'Ethereum'),
+                    etfPrice: latestEntry.etf_price || latestEntry.ibit_price || 0,
+                    positions: 0,
+                    totalReturn: 0,
+                    totalCurrentValue: 0,
+                    totalPurchaseCost: 0
+                };
+            }
+            
+            assetSummary[symbol].positions++;
+            assetSummary[symbol].totalReturn += latestEntry.total_return;
+            assetSummary[symbol].totalCurrentValue += latestEntry.market_price * 100;
+            assetSummary[symbol].totalPurchaseCost += latestEntry.purchase_cost * 100;
         });
 
         const totalReturnPercentage = totalPurchaseCost > 0 ? (totalReturn / totalPurchaseCost) * 100 : 0;
@@ -177,16 +216,26 @@ class DataLoader {
                 positionCount: Object.keys(positions).length
             },
             rawData: longLeapData,
-            positions: positions
+            positions: positions,
+            betaPositions: betaPositions,
+            assetSummary: assetSummary
         };
     }
 
-    // Group data by option (strike + expiration)
+    // Group data by option (symbol + strike + expiration for multi-asset support)
     groupByOption(data) {
         const groups = {};
         
         data.forEach(row => {
-            const key = `${row.strike_price}_${row.expiration_date}`;
+            // Skip rows without required fields
+            if (!row.strike_price || !row.expiration_date) {
+                console.warn('Skipping row with missing data:', row);
+                return;
+            }
+            
+            // Include symbol to distinguish between IBIT and ETHA options with same strike
+            const symbol = row.symbol || 'IBIT'; // fallback for legacy data
+            const key = `${symbol}_${row.strike_price}_${row.expiration_date}`;
             if (!groups[key]) {
                 groups[key] = [];
             }
@@ -200,14 +249,28 @@ class DataLoader {
 
         return groups;
     }
+    
+    // Helper function to infer beta strategy from legacy data
+    inferBetaStrategy(entry) {
+        const symbol = entry.symbol || 'IBIT';
+        const strike = entry.strike_price;
+        
+        if (symbol === 'IBIT') {
+            return strike === 85 ? 'IBIT Moderate Beta' : 'IBIT High Beta';
+        } else if (symbol === 'ETHA') {
+            return strike >= 25 ? 'ETHA Moderate Beta' : 'ETHA High Beta';
+        }
+        
+        return 'Unknown Strategy';
+    }
 
     // Get available projects
     getAvailableProjects() {
         return [
             {
                 name: 'IBIT_Call_Monitor',
-                title: 'IBIT Call Monitor',
-                description: 'Monitoring IBIT call options with real-time pricing and Greeks analysis'
+                title: 'Multi-Asset ETF Call Monitor',
+                description: 'Monitoring IBIT & ETHA call options with cross-asset beta comparison'
             }
             // Add more projects here as they are created
         ];

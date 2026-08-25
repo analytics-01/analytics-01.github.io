@@ -97,17 +97,28 @@ function updatePositionsTable() {
     const tbody = document.querySelector('#positionsTable tbody');
     const positions = projectData.positions;
     
+
+    
     const rows = Object.keys(positions).map(optionKey => {
         const latest = positions[optionKey][0]; // Most recent data
         const returnClass = latest.return_percentage >= 0 ? 'return-positive' : 'return-negative';
         
+        // Calculate beta efficiency (return per unit of delta)
+        const betaEfficiency = latest.delta > 0 ? (latest.return_percentage / latest.delta).toFixed(1) : '0.0';
+        
+        // Get asset and strategy info (with fallbacks for legacy data)
+        const symbol = latest.symbol || 'IBIT';
+        const strategy = latest.strategy || (latest.strike_price === 85 ? 'IBIT Moderate Beta' : 'IBIT High Beta');
+        
         return `
             <tr>
+                <td><strong>${symbol}</strong></td>
                 <td>$${latest.strike_price}</td>
-                <td>${latest.expiration_date}</td>
+                <td>${strategy}</td>
                 <td>$${latest.market_price.toFixed(2)}</td>
                 <td class="${returnClass}">${latest.return_percentage.toFixed(1)}%</td>
-                <td>${latest.delta.toFixed(3)}</td>
+                <td><strong>${latest.delta.toFixed(3)}</strong></td>
+                <td>${betaEfficiency}%</td>
                 <td>${latest.gamma.toFixed(3)}</td>
                 <td>${latest.theta.toFixed(3)}</td>
                 <td>${latest.vega.toFixed(3)}</td>
@@ -175,6 +186,8 @@ function createCharts() {
     createPricesChart();
     createGreeksChart();
     createVolatilityChart();
+    createCrossAssetComparisonChart();
+    createBetaEfficiencyMatrix();
 }
 
 function createPortfolioChart() {
@@ -443,6 +456,126 @@ function updateCharts() {
 function showError(message) {
     const container = document.getElementById('summaryCards');
     container.innerHTML = `<div class="error" style="grid-column: 1 / -1; text-align: center; color: #e74c3c; padding: 2rem;">${message}</div>`;
+}
+
+function createCrossAssetComparisonChart() {
+    const ctx = document.getElementById('crossAssetComparisonChart');
+    if (!ctx) return;
+    
+    const positions = projectData.positions;
+    const datasets = [];
+    const labels = [];
+    
+    Object.keys(positions).forEach(optionKey => {
+        const latest = positions[optionKey][0];
+        const symbol = latest.symbol || 'IBIT';
+        labels.push(`${symbol} $${latest.strike_price}`);
+        datasets.push({
+            label: `${symbol} $${latest.strike_price}`,
+            data: [latest.return_percentage],
+            backgroundColor: symbol === 'IBIT' ? 'rgba(54, 162, 235, 0.8)' : 'rgba(255, 99, 132, 0.8)',
+            borderColor: symbol === 'IBIT' ? 'rgba(54, 162, 235, 1)' : 'rgba(255, 99, 132, 1)',
+            borderWidth: 1
+        });
+    });
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Return %',
+                data: datasets.map(d => d.data[0]),
+                backgroundColor: datasets.map(d => d.backgroundColor),
+                borderColor: datasets.map(d => d.borderColor),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'IBIT vs ETHA Performance Comparison'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Return %'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function createBetaEfficiencyMatrix() {
+    const ctx = document.getElementById('betaEfficiencyMatrix');
+    if (!ctx) return;
+    
+    const positions = projectData.positions;
+    const data = [];
+    const labels = [];
+    
+    Object.keys(positions).forEach(optionKey => {
+        const latest = positions[optionKey][0];
+        const symbol = latest.symbol || 'IBIT';
+        const efficiency = latest.delta > 0 ? latest.return_percentage / latest.delta : 0;
+        
+        data.push({
+            x: latest.delta,
+            y: latest.return_percentage,
+            label: `${symbol} $${latest.strike_price}`
+        });
+        labels.push(`${symbol} $${latest.strike_price}`);
+    });
+
+    new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Beta Efficiency',
+                data: data,
+                backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                pointRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Delta vs Return % (Beta Efficiency)'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const point = context.raw;
+                            return `${point.label}: δ=${point.x.toFixed(3)}, Return=${point.y.toFixed(1)}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Delta (β)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Return %'
+                    }
+                }
+            }
+        }
+    });
 }
 
 async function refreshData() {

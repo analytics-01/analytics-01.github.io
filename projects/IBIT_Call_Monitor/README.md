@@ -1,21 +1,31 @@
-# IBIT Long Leap Call Monitor
+# Multi-Asset ETF Call Monitor
 
-A comprehensive monitoring system for IBIT (iShares Bitcoin Trust) long leap call options with real-time pricing, Greeks analysis, and automated daily data collection.
+A comprehensive monitoring system for IBIT (Bitcoin) and ETHA (Ethereum) long leap call options with cross-asset beta comparison, real-time pricing, Greeks analysis, and automated daily data collection.
 
 ## 📊 Overview
 
-This project tracks the performance of IBIT long leap call options (1+ year to expiration):
-- **$85 Call** expiring December 17, 2027 (purchased at $14.95)
+This project tracks the performance of crypto ETF long leap call options across different beta (delta) levels:
 
-**Note**: The $60 call option expiring July 31, 2025 has been removed as it expired. We now focus exclusively on long leap calls with 1+ year to expiration for strategic long-term positioning.
+### IBIT Options (Bitcoin ETF)
+- **$85 Call** (β≈0.6) expiring December 17, 2027 (purchased at $14.95) - Moderate Beta
+- **$75 Call** (β≈0.8) expiring December 17, 2027 (estimated $22.50) - High Beta
+
+### ETHA Options (Ethereum ETF)  
+- **$25 Call** (β≈0.6) expiring December 17, 2027 (estimated $8.50) - Moderate Beta
+- **$20 Call** (β≈0.8) expiring December 17, 2027 (estimated $12.00) - High Beta
+
+**Strategy**: Compare Bitcoin vs Ethereum performance across beta sensitivity levels to analyze risk/reward efficiency and cross-asset correlation patterns.
 
 ## 🎯 Features
 
-- **Real-time Market Data**: Fetches current IBIT price and option pricing from Yahoo Finance
+- **Multi-Asset Tracking**: Monitors IBIT (Bitcoin) and ETHA (Ethereum) ETF options simultaneously
+- **Beta Strategy Comparison**: Compares 0.6 vs 0.8 delta sensitivity across both assets
+- **Real-time Market Data**: Fetches current ETF prices and option pricing from Yahoo Finance
 - **Greeks Calculation**: Computes Delta, Gamma, Theta, Vega, and Rho using Black-Scholes model
-- **Portfolio Tracking**: Monitors total returns and percentage gains/losses
-- **Automated Collection**: Daily data updates via GitHub Actions
-- **Web Dashboard**: Interactive charts and analytics dashboard focused on long leap calls
+- **Cross-Asset Analytics**: Beta efficiency, correlation analysis, and risk/reward metrics
+- **Portfolio Tracking**: Monitors returns across multiple positions and asset classes
+- **Automated Collection**: Daily data updates via GitHub Actions for all positions
+- **Enhanced Dashboard**: Interactive charts with multi-asset comparison and beta analysis
 
 ## 🏗️ Architecture
 
@@ -68,12 +78,15 @@ The project runs automatically Monday-Friday at 10:00 AM EST via GitHub Actions.
 
 ## 💰 Portfolio Summary
 
-| Position | Strike | Expiration | Purchase Price | Contracts | Type |
-|----------|--------|------------|----------------|-----------|------|
-| IBIT Call | $85 | Dec 17, 2027 | $14.95 | 1 | Long Leap |
+| Asset | Position | Strike | Beta Target | Expiration | Purchase Price | Contracts | Strategy |
+|-------|----------|--------|-------------|------------|----------------|-----------|----------|
+| IBIT | Bitcoin Call | $85 | 0.6 | Dec 17, 2027 | $14.95 | 1 | Moderate Beta |
+| IBIT | Bitcoin Call | $75 | 0.8 | Dec 17, 2027 | $22.50* | 1 | High Beta |
+| ETHA | Ethereum Call | $25 | 0.6 | Dec 17, 2027 | $8.50* | 1 | Moderate Beta |
+| ETHA | Ethereum Call | $20 | 0.8 | Dec 17, 2027 | $12.00* | 1 | High Beta |
 
-**Total Investment**: $1,495
-**Strategy**: Long leap calls for strategic Bitcoin exposure with extended time horizon
+**Total Investment**: ~$5,795 (*estimated pricing for new positions)
+**Strategy**: Multi-asset crypto exposure with beta sensitivity comparison across Bitcoin and Ethereum ETFs
 
 ## 🛠️ Technical Details
 
